@@ -35,10 +35,17 @@ export default defineComponent({
       { [`${classPrefix.value}-menu--scroll`]: mode.value !== 'popup' },
       'narrow-scrollbar',
     ]);
-    const expandWidth = typeof props.width === 'number' ? `${props.width}px` : props.width;
+    const expandWidth = computed(() => {
+      const { width } = props;
+      const format = (val: string | number) => (typeof val === 'number' ? `${val}px` : val);
+      if (Array.isArray(width)) return width.map((item) => format(item));
+
+      return [format(width), '64px'];
+    });
+
     const styles: ClassName = computed(() => ({
       height: '100%',
-      width: props.collapsed ? '64px' : expandWidth,
+      width: props.collapsed ? expandWidth.value[1] : expandWidth.value[0],
     }));
 
     const { value, modelValue, expanded } = toRefs(props);
@@ -47,7 +54,7 @@ export default defineComponent({
     const activeValues = ref([]);
 
     watchEffect(() => {
-      mode.value = props.collapsed ? 'popup' : 'normal';
+      mode.value = props.collapsed ? 'popup' : props.expandType;
       props.onCollapsed?.({ collapsed: props.collapsed });
     });
 
@@ -90,8 +97,7 @@ export default defineComponent({
     const updateActiveValues = (value: MenuValue) => {
       activeValues.value = vMenu.select(value);
     };
-    watch(() => props.value, updateActiveValues);
-    watch(() => props.defaultValue, updateActiveValues);
+    watch(activeValue, updateActiveValues);
 
     // timelifes
     onMounted(() => {
